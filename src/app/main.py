@@ -15,7 +15,7 @@ from typing import List, Optional
 
 from fastapi import (BackgroundTasks, Depends, FastAPI, File, Form,
                      HTTPException, Request, UploadFile)
-# from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
+from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from fastapi.security.api_key import APIKeyHeader
 from minio import Minio
 # from minio.error import S3Error
@@ -41,26 +41,26 @@ app = FastAPI(
 )
 
 
-# @app.get("/openapi.json", include_in_schema=False)
-# async def get_open_api_endpoint():
-#     return app.openapi()
+@app.get("/openapi.json", include_in_schema=False)
+async def get_open_api_endpoint():
+    return app.openapi()
 
-# @app.get("/docs", include_in_schema=False)
-# async def get_documentation():
-#     return get_swagger_ui_html(
-#         openapi_url=app.openapi_url,
-#         title=app.title + " - Swagger UI",
-#         swagger_ui_parameters={"displayRequestDuration": True},
-#         swagger_favicon_url=None
-#     )
 
-# @app.get("/redoc", include_in_schema=False)
-# async def redoc_documentation():
-#     return get_redoc_html(
-#         openapi_url=app.openapi_url,
-#         title=app.title + " - ReDoc",
-#         redoc_favicon_url=None
-#     )
+@app.get("/docs", include_in_schema=False)
+async def get_documentation():
+    return get_swagger_ui_html(
+        openapi_url=app.openapi_url or "/openapi.json",
+        title=app.title + " - Swagger UI",
+        swagger_ui_parameters={"displayRequestDuration": True}
+    )
+
+
+@app.get("/redoc", include_in_schema=False)
+async def redoc_documentation():
+    return get_redoc_html(
+        openapi_url=app.openapi_url or "/openapi.json",
+        title=app.title + " - ReDoc"
+    )
 
 # API Key Dependency
 api_key_header = APIKeyHeader(name="X-API-Key")
