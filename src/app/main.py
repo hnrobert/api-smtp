@@ -22,17 +22,18 @@ from minio import Minio
 from pydantic import BaseModel, field_validator
 
 
-def load_smtp_config():
+def load_smtp_config() -> dict:
     with open('smtp_config.json', 'r') as file:
         return json.load(file)
 
 
 smtp_config = load_smtp_config()
-API_KEY = smtp_config.get('api_key', 'your_api_key')
+API_KEY = smtp_config.get('api_key', None)
 
 app = FastAPI(
-    title=smtp_config.get('api_name'),
-    description=smtp_config.get('api_description'),
+    title=smtp_config.get('api_name', "High-Performance SMTP API"),
+    description=smtp_config.get(
+        'api_description', "SMTP API mail dispatch with support for attachments."),
     version="1.0.0",
     docs_url=None,  # Disable the default docs
     redoc_url=None,  # Disable the default redoc
@@ -66,7 +67,7 @@ api_key_header = APIKeyHeader(name="X-API-Key")
 
 
 async def get_api_key(api_key_header: str = Depends(api_key_header)):
-    if api_key_header != API_KEY:
+    if api_key_header != API_KEY and API_KEY is not None:
         raise HTTPException(
             status_code=403, detail="Could not validate credentials")
 
