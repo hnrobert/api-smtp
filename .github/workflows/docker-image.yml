@@ -5,6 +5,12 @@ on:
     branches:
       - main
       - develop
+    paths:
+      - '.github/workflows/docker-image.yml'
+      - 'src/docker/Dockerfile'
+      - 'src/app/requirements.txt'
+      - 'src/app/**.py'
+      - 'src/app/**/*.py'
 
 permissions:
   contents: read
