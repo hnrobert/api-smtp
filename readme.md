@@ -12,7 +12,7 @@ This project is a proof of concept API for sending emails via SMTP, built using 
 
 ## Project Structure
 
-```
+```text
 .
 ├── docker-compose.yml
 ├── readme.md
@@ -37,24 +37,24 @@ The SMTP settings and API key are stored in the `smtp_config.json` file. The str
 
 ```json
 {
-    "api_key": "your_api_key",
-    "api_name": "High-Performance SMTP API",
-    "api_description": "SMTP API mail dispatch with support for attachments.",
-    "smtp_server": "maildev",
-    "smtp_port": 1025,
-    "max_len_recipient_email": 64,
-    "max_len_subject": 255,
-    "max_len_body": 50000,
-    "use_ssl": false,
-    "use_password": false,
-    "use_tls": false,
-    "sender_email": "your_email@example.com",
-    "sender_domain": "devel.local.email",
-    "sender_password": "your_password",
-    "minio_server": "minio:9000",
-    "minio_access_key": "minioadmin",
-    "minio_secret_key": "minioadmin",
-    "minio_secure": false
+  "api_key": "your_api_key",
+  "api_name": "High-Performance SMTP API",
+  "api_description": "SMTP API mail dispatch with support for attachments.",
+  "smtp_server": "maildev",
+  "smtp_port": 1025,
+  "max_len_recipient_email": 64,
+  "max_len_subject": 255,
+  "max_len_body": 50000,
+  "use_ssl": false,
+  "use_password": false,
+  "use_tls": false,
+  "sender_email": "your_email@example.com",
+  "sender_domain": "devel.local.email",
+  "sender_password": "your_password",
+  "minio_server": "minio:9000",
+  "minio_access_key": "minioadmin",
+  "minio_secret_key": "minioadmin",
+  "minio_secure": false
 }
 ```
 
@@ -62,16 +62,16 @@ The SMTP settings and API key are stored in the `smtp_config.json` file. The str
 
 1. Clone the repository:
 
-```bash
-git clone https://github.com/gni/api-smtp.git
-cd api-smtp
-```
+   ```bash
+   git clone https://github.com/gni/api-smtp.git
+   cd api-smtp
+   ```
 
 2. Set up and run Docker containers for MinIO and other dependencies:
 
-```bash
-docker-compose up
-```
+   ```bash
+   docker-compose up
+   ```
 
 ## Usage
 
@@ -146,75 +146,82 @@ This project is licensed under the MIT License.
 <!-- DOCKUMENTOR START -->
 
 ### 🐳 Service: nginx
+
 - **Image**: nginx:latest
 - **Ports**: 127.0.0.1:80:80
 - **Volumes**: ./src/nginx/nginx.conf:/etc/nginx/nginx.conf:ro, ./src/nginx/conf.d:/etc/nginx/conf.d:ro
 - **Depends On**: api-smtp
 - **Command**: No command specified
+
 #### Environment Variables
 
 | Variable | Value |
-|----------|-------|
+| -------- | ----- |
 
 ### 🐳 Service: api-smtp
-- **Image**: 
+
+- **Image**:
 - **Ports**: internal:8000:8000
 - **Volumes**: ./data:/app/data
-- **Depends On**: 
+- **Depends On**:
 - **Command**: No command specified
+
 #### Environment Variables
 
-| Variable | Value |
-|----------|-------|
-| MODULE_NAME | main |
-| VARIABLE_NAME | app |
+| Variable      | Value |
+| ------------- | ----- |
+| MODULE_NAME   | main  |
+| VARIABLE_NAME | app   |
 
 ### 🐳 Service: maildev
+
 - **Image**: maildev/maildev
 - **Ports**: 127.0.0.1:1080:1080, 127.0.0.1:1025:1025
-- **Volumes**: 
-- **Depends On**: 
+- **Volumes**:
+- **Depends On**:
 - **Command**: No command specified
+
 #### Environment Variables
 
-| Variable | Value |
-|----------|-------|
-| MAILDEV_SMTP_PORT | 1025 |
-| MAILDEV_WEB_PORT | 1080 |
+| Variable          | Value |
+| ----------------- | ----- |
+| MAILDEV_SMTP_PORT | 1025  |
+| MAILDEV_WEB_PORT  | 1080  |
 
 ### 🐳 Service: minio
+
 - **Image**: minio/minio
 - **Ports**: 127.0.0.1:9000:9000, 127.0.0.1:9001:9001
-- **Volumes**: 
-- **Depends On**: 
+- **Volumes**:
+- **Depends On**:
 - **Command**: server /data --console-address ":9001"
+
 #### Environment Variables
 
-| Variable | Value |
-|----------|-------|
-| MINIO_ROOT_USER | minioadmin |
+| Variable            | Value      |
+| ------------------- | ---------- |
+| MINIO_ROOT_USER     | minioadmin |
 | MINIO_ROOT_PASSWORD | minioadmin |
 
 ### 🐳 Service: minio-client
+
 - **Image**: minio/mc
-- **Ports**: 
-- **Volumes**: 
+- **Ports**:
+- **Volumes**:
 - **Depends On**: minio
 - **Command**: No command specified
+
 #### Environment Variables
 
 | Variable | Value |
-|----------|-------|
-
-
+| -------- | ----- |
 
 ## Networks
-
-
 
 ## Graphs
 
 ### Network depend
+
 ```mermaid
 flowchart TD
 nginx["nginx<br>nginx:latest<br>Ports: 127.0.0.1:80:80"]
@@ -228,6 +235,7 @@ minio --> minio_client
 ```
 
 ### Services depend
+
 ```mermaid
 sankey-beta
 api_smtp, nginx, 1
@@ -235,6 +243,7 @@ minio, minio_client, 1
 ```
 
 ### Services ports
+
 ```mermaid
 sankey-beta
 External, maildev, 1
@@ -266,16 +275,13 @@ sequenceDiagram
 
 ## Troubleshooting
 
-
 - Ensure Docker is running before starting services.
 
 - Check container logs if a service fails to start.
 
 - Verify network connections if services can't communicate.
 
-
 ## Maintenance Tips
-
 
 - To update a service, modify the image tag and run `docker-compose up -d`.
 
