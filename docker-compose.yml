@@ -23,7 +23,7 @@ services:
       - VARIABLE_NAME=app
     volumes:
       - ./data:/app/data
-      - ./src/app/smtp_config.json:/app/smtp_config.json:ro
+      - ./src/app/smtp_config.jsonc:/app/smtp_config.jsonc:ro
     expose:
       - '8000'
 

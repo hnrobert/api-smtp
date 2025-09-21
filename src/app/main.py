@@ -13,6 +13,7 @@ from email.mime.text import MIMEText
 from email.utils import formatdate
 from typing import List, Optional
 
+import commentjson
 from fastapi import (BackgroundTasks, Depends, FastAPI, File, Form,
                      HTTPException, Request, UploadFile)
 from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
@@ -23,8 +24,15 @@ from pydantic import BaseModel, field_validator
 
 
 def load_smtp_config() -> dict:
-    with open('smtp_config.json', 'r') as file:
-        return json.load(file)
+    config_paths = ['smtp_config.jsonc', 'smtp_config.json']
+    for path in config_paths:
+        if os.path.exists(path):
+            with open(path, 'r') as file:
+                if path.endswith('.jsonc'):
+                    return commentjson.load(file)
+                else:
+                    return json.load(file)
+    raise FileNotFoundError("Config file not found in following paths: " + ", ".join(config_paths))
 
 
 smtp_config = load_smtp_config()
