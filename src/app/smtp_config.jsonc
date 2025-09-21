@@ -14,7 +14,8 @@
     "max_len_subject": 255, // Maximum subject length
     "max_len_body": 50000, // Maximum email body length
     // Sender Configuration
-    "sender_email": "your_email@example.com",
+    "sender_email": "your_email@example.com", // SMTP authentication email (actual account)
+    "sender_email_display": "", // From header display email (leave empty to use sender_email)
     "sender_domain": "devel.local.email",
     "sender_password": "your_password",
     // MinIO Object Storage Settings

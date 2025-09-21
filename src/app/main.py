@@ -32,7 +32,8 @@ def load_smtp_config() -> dict:
                     return commentjson.load(file)
                 else:
                     return json.load(file)
-    raise FileNotFoundError("Config file not found in following paths: " + ", ".join(config_paths))
+    raise FileNotFoundError(
+        "Config file not found in following paths: " + ", ".join(config_paths))
 
 
 smtp_config = load_smtp_config()
@@ -216,7 +217,10 @@ def add_attachment(object_name: str):
 def send_email_task(email_request: EmailRequest, email_id: str, client_ip: str, headers: dict, attachment_names: List[str]):
     try:
         message = MIMEMultipart()
-        message["From"] = smtp_config["sender_email"]
+        # Use sender_email_display for From header if specified, otherwise fallback to sender_email
+        display_email = smtp_config.get("sender_email_display", "").strip()
+        from_email = display_email if display_email else smtp_config["sender_email"]
+        message["From"] = from_email
         message["To"] = email_request.recipient_email
         message["Subject"] = email_request.subject
         message["Date"] = formatdate(localtime=True)
