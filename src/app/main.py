@@ -37,7 +37,11 @@ def load_smtp_config() -> dict:
 
 
 smtp_config = load_smtp_config()
-API_KEY = smtp_config.get('api_key', None)
+API_KEY = smtp_config.get('api_key', '')
+
+# Check if API key authentication should be enabled
+# API key auth is disabled if api_key is empty string or not present
+API_AUTH_ENABLED = bool(API_KEY and API_KEY.strip())
 
 app = FastAPI(
     title=smtp_config.get('api_name', "High-Performance SMTP API"),
@@ -72,13 +76,27 @@ async def redoc_documentation():
     )
 
 # API Key Dependency
-api_key_header = APIKeyHeader(name="X-API-Key")
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 
 async def get_api_key(api_key_header: str = Depends(api_key_header)):
-    if api_key_header != API_KEY and API_KEY is not None:
+    # If API authentication is disabled, skip validation
+    if not API_AUTH_ENABLED:
+        return None
+    
+    # If API authentication is enabled, validate the key
+    if not api_key_header or api_key_header != API_KEY:
         raise HTTPException(
             status_code=403, detail="Could not validate credentials")
+    return api_key_header
+
+
+def get_optional_api_key():
+    """Returns the API key dependency only if authentication is enabled"""
+    if API_AUTH_ENABLED:
+        return Depends(get_api_key)
+    else:
+        return None
 
 
 class EmailRequest(BaseModel):
@@ -294,7 +312,7 @@ async def send_email_with_attachments(
     body_type: str = Form("plain"),
     debug: bool = Form(False),
     attachments: List[UploadFile] = File(None),
-    api_key: str = Depends(get_api_key)
+    api_key = Depends(get_api_key) if API_AUTH_ENABLED else None
 ):
     email_id = str(uuid.uuid4())
     client_ip = request.headers.get(
@@ -342,7 +360,7 @@ async def send_email_json(
     background_tasks: BackgroundTasks,
     request: Request,
     email_request: EmailRequest,
-    api_key: str = Depends(get_api_key)
+    api_key = Depends(get_api_key) if API_AUTH_ENABLED else None
 ):
     email_id = str(uuid.uuid4())
     client_ip = request.headers.get(
