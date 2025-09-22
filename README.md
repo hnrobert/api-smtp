@@ -377,7 +377,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 👨‍💻 Author
 
-- **Robert He** - [hnrobert](https://github.com/hnrobert)
+- Forked from [Lucian BLETAN](https://github.com/gni)
+- Enhanced by [Robert He](https://github.com/hnrobert)
 
 ---
 
