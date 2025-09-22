@@ -13,26 +13,40 @@ from email.mime.text import MIMEText
 from email.utils import formatdate
 from typing import List, Optional
 
+import commentjson
 from fastapi import (BackgroundTasks, Depends, FastAPI, File, Form,
                      HTTPException, Request, UploadFile)
-# from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
+from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from fastapi.security.api_key import APIKeyHeader
 from minio import Minio
 # from minio.error import S3Error
 from pydantic import BaseModel, field_validator
 
 
-def load_smtp_config():
-    with open('smtp_config.json', 'r') as file:
-        return json.load(file)
+def load_smtp_config() -> dict:
+    config_paths = ['smtp_config.jsonc', 'smtp_config.json']
+    for path in config_paths:
+        if os.path.exists(path):
+            with open(path, 'r') as file:
+                if path.endswith('.jsonc'):
+                    return commentjson.load(file)
+                else:
+                    return json.load(file)
+    raise FileNotFoundError(
+        "Config file not found in following paths: " + ", ".join(config_paths))
 
 
 smtp_config = load_smtp_config()
-API_KEY = smtp_config.get('api_key', 'your_api_key')
+API_KEY = smtp_config.get('api_key', '')
+
+# Check if API key authentication should be enabled
+# API key auth is disabled if api_key is empty string or not present
+API_AUTH_ENABLED = bool(API_KEY and API_KEY.strip())
 
 app = FastAPI(
-    title=smtp_config.get('api_name'),
-    description=smtp_config.get('api_description'),
+    title=smtp_config.get('api_name', "High-Performance SMTP API"),
+    description=smtp_config.get(
+        'api_description', "SMTP API mail dispatch with support for attachments."),
     version="1.0.0",
     docs_url=None,  # Disable the default docs
     redoc_url=None,  # Disable the default redoc
@@ -40,35 +54,49 @@ app = FastAPI(
 )
 
 
-# @app.get("/openapi.json", include_in_schema=False)
-# async def get_open_api_endpoint():
-#     return app.openapi()
+@app.get("/openapi.json", include_in_schema=False)
+async def get_open_api_endpoint():
+    return app.openapi()
 
-# @app.get("/docs", include_in_schema=False)
-# async def get_documentation():
-#     return get_swagger_ui_html(
-#         openapi_url=app.openapi_url,
-#         title=app.title + " - Swagger UI",
-#         swagger_ui_parameters={"displayRequestDuration": True},
-#         swagger_favicon_url=None
-#     )
 
-# @app.get("/redoc", include_in_schema=False)
-# async def redoc_documentation():
-#     return get_redoc_html(
-#         openapi_url=app.openapi_url,
-#         title=app.title + " - ReDoc",
-#         redoc_favicon_url=None
-#     )
+@app.get("/docs", include_in_schema=False)
+async def get_documentation():
+    return get_swagger_ui_html(
+        openapi_url=app.openapi_url or "/openapi.json",
+        title=app.title + " - Swagger UI",
+        swagger_ui_parameters={"displayRequestDuration": True}
+    )
+
+
+@app.get("/redoc", include_in_schema=False)
+async def redoc_documentation():
+    return get_redoc_html(
+        openapi_url=app.openapi_url or "/openapi.json",
+        title=app.title + " - ReDoc"
+    )
 
 # API Key Dependency
-api_key_header = APIKeyHeader(name="X-API-Key")
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 
 async def get_api_key(api_key_header: str = Depends(api_key_header)):
-    if api_key_header != API_KEY:
+    # If API authentication is disabled, skip validation
+    if not API_AUTH_ENABLED:
+        return None
+    
+    # If API authentication is enabled, validate the key
+    if not api_key_header or api_key_header != API_KEY:
         raise HTTPException(
             status_code=403, detail="Could not validate credentials")
+    return api_key_header
+
+
+def get_optional_api_key():
+    """Returns the API key dependency only if authentication is enabled"""
+    if API_AUTH_ENABLED:
+        return Depends(get_api_key)
+    else:
+        return None
 
 
 class EmailRequest(BaseModel):
@@ -207,7 +235,10 @@ def add_attachment(object_name: str):
 def send_email_task(email_request: EmailRequest, email_id: str, client_ip: str, headers: dict, attachment_names: List[str]):
     try:
         message = MIMEMultipart()
-        message["From"] = smtp_config["sender_email"]
+        # Use sender_email_display for From header if specified, otherwise fallback to sender_email
+        display_email = smtp_config.get("sender_email_display", "").strip()
+        from_email = display_email if display_email else smtp_config["sender_email"]
+        message["From"] = from_email
         message["To"] = email_request.recipient_email
         message["Subject"] = email_request.subject
         message["Date"] = formatdate(localtime=True)
@@ -281,7 +312,7 @@ async def send_email_with_attachments(
     body_type: str = Form("plain"),
     debug: bool = Form(False),
     attachments: List[UploadFile] = File(None),
-    api_key: str = Depends(get_api_key)
+    api_key = Depends(get_api_key) if API_AUTH_ENABLED else None
 ):
     email_id = str(uuid.uuid4())
     client_ip = request.headers.get(
@@ -329,7 +360,7 @@ async def send_email_json(
     background_tasks: BackgroundTasks,
     request: Request,
     email_request: EmailRequest,
-    api_key: str = Depends(get_api_key)
+    api_key = Depends(get_api_key) if API_AUTH_ENABLED else None
 ):
     email_id = str(uuid.uuid4())
     client_ip = request.headers.get(

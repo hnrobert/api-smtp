@@ -4,6 +4,7 @@ data
 
 # Exclude runtime config to mount at runtime instead
 src/app/smtp_config.json
+src/app/smtp_config.jsonc
 
 # Python cache
 __pycache__
